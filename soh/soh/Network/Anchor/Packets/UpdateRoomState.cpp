@@ -55,4 +55,9 @@ void Anchor::HandlePacket_UpdateRoomState(nlohmann::json payload) {
     roomState.showLocationsMode = payload["state"]["showLocationsMode"].get<u8>();
     roomState.teleportMode = payload["state"]["teleportMode"].get<u8>();
     roomState.syncItemsAndFlags = payload["state"]["syncItemsAndFlags"].get<u8>();
+
+    CVarSetInteger(CVAR_REMOTE_ANCHOR("RoomSettings.PvpMode"), roomState.pvpMode);
+    CVarSetInteger(CVAR_REMOTE_ANCHOR("RoomSettings.PvpDamageMult"), roomState.pvpDamageMult);
+    CVarSetInteger(CVAR_REMOTE_ANCHOR("RoomSettings.ShowLocationsMode"), roomState.showLocationsMode);
+    CVarSetInteger(CVAR_REMOTE_ANCHOR("RoomSettings.TeleportMode"), roomState.teleportMode);
 }

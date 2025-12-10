@@ -159,58 +159,77 @@ void AnchorAdminMenu(WidgetInfo& info) {
     auto anchor = Anchor::Instance;
     bool isGlobalRoom = (std::string("soh-global") == CVarGetString(CVAR_REMOTE_ANCHOR("RoomId"), ""));
 
-    if (!anchor->isEnabled || !anchor->isConnected || anchor->roomState.ownerClientId != anchor->ownClientId ||
-        isGlobalRoom) {
+    if (!anchor->isEnabled || !anchor->isConnected || isGlobalRoom) {
         return;
     }
 
+    bool isAdmin = anchor->roomState.ownerClientId == anchor->ownClientId;
+
     ImGui::SeparatorText("Room Settings (Admin Only)");
 
-    UIWidgets::PushStyleButton(THEME_COLOR);
-    if (ImGui::Button("Clear All Team State")) {
-        std::set<std::string> teams;
-        for (auto& [clientId, client] : Anchor::Instance->clients) {
-            teams.insert(client.teamId);
+    if (isAdmin) {
+        UIWidgets::PushStyleButton(THEME_COLOR);
+        if (ImGui::Button("Clear All Team State")) {
+            std::set<std::string> teams;
+            for (auto& [clientId, client] : Anchor::Instance->clients) {
+                teams.insert(client.teamId);
+            }
+            for (auto& team : teams) {
+                anchor->SendPacket_ClearTeamState(team);
+            }
         }
-        for (auto& team : teams) {
-            anchor->SendPacket_ClearTeamState(team);
-        }
+        UIWidgets::PopStyleButton();
     }
-    UIWidgets::PopStyleButton();
 
+    UIWidgets::ComboboxOptions pvpModeOptions =
+        UIWidgets::ComboboxOptions()
+            .DefaultIndex(1)
+            .LabelPosition(UIWidgets::LabelPositions::Above)
+            .Color(THEME_COLOR);
+    pvpModeOptions.Disabled(!isAdmin);
     if (UIWidgets::CVarCombobox("PvP Mode:", CVAR_REMOTE_ANCHOR("RoomSettings.PvpMode"), pvpModes,
-                                UIWidgets::ComboboxOptions()
-                                    .DefaultIndex(1)
-                                    .LabelPosition(UIWidgets::LabelPositions::Above)
-                                    .Color(THEME_COLOR))) {
+                                pvpModeOptions)) {
         anchor->SendPacket_UpdateRoomState();
     }
+
+    UIWidgets::ComboboxOptions pvpDamageMultOptions =
+        UIWidgets::ComboboxOptions()
+            .DefaultIndex(1)
+            .LabelPosition(UIWidgets::LabelPositions::Above)
+            .Color(THEME_COLOR);
+    pvpDamageMultOptions.Disabled(!isAdmin);
     if (UIWidgets::CVarCombobox("PvP Damage Multiplier:", CVAR_REMOTE_ANCHOR("RoomSettings.PvpDamageMult"),
-                                pvpDamageMults,
-                                UIWidgets::ComboboxOptions()
-                                    .DefaultIndex(1)
-                                    .LabelPosition(UIWidgets::LabelPositions::Above)
-                                    .Color(THEME_COLOR))) {
+                                pvpDamageMults, pvpDamageMultOptions)) {
         anchor->SendPacket_UpdateRoomState();
     }
+
+    UIWidgets::ComboboxOptions showLocationsModeOptions =
+        UIWidgets::ComboboxOptions()
+            .DefaultIndex(1)
+            .LabelPosition(UIWidgets::LabelPositions::Above)
+            .Color(THEME_COLOR);
+    showLocationsModeOptions.Disabled(!isAdmin);
     if (UIWidgets::CVarCombobox("Show Locations For:", CVAR_REMOTE_ANCHOR("RoomSettings.ShowLocationsMode"),
-                                showLocationsModes,
-                                UIWidgets::ComboboxOptions()
-                                    .DefaultIndex(1)
-                                    .LabelPosition(UIWidgets::LabelPositions::Above)
-                                    .Color(THEME_COLOR))) {
+                                showLocationsModes, showLocationsModeOptions)) {
         anchor->SendPacket_UpdateRoomState();
     }
+
+    UIWidgets::ComboboxOptions teleportModesOptions =
+        UIWidgets::ComboboxOptions()
+            .DefaultIndex(1)
+            .LabelPosition(UIWidgets::LabelPositions::Above)
+            .Color(THEME_COLOR);
+    teleportModesOptions.Disabled(!isAdmin);
     if (UIWidgets::CVarCombobox("Allow Teleporting To:", CVAR_REMOTE_ANCHOR("RoomSettings.TeleportMode"), teleportModes,
-                                UIWidgets::ComboboxOptions()
-                                    .DefaultIndex(1)
-                                    .LabelPosition(UIWidgets::LabelPositions::Above)
-                                    .Color(THEME_COLOR))) {
+                                teleportModesOptions)) {
         anchor->SendPacket_UpdateRoomState();
     }
-    if (UIWidgets::CVarCheckbox("Sync Items & Flags", CVAR_REMOTE_ANCHOR("RoomSettings.SyncItemsAndFlags"),
-                                UIWidgets::CheckboxOptions().DefaultValue(true).Color(THEME_COLOR))) {
-        anchor->SendPacket_UpdateRoomState();
+
+    if (isAdmin) {
+        if (UIWidgets::CVarCheckbox("Sync Items & Flags", CVAR_REMOTE_ANCHOR("RoomSettings.SyncItemsAndFlags"),
+                UIWidgets::CheckboxOptions().DefaultValue(true).Color(THEME_COLOR))) {
+            anchor->SendPacket_UpdateRoomState();
+        }
     }
 }
 
